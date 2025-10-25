@@ -495,8 +495,9 @@ body {
   /* This must match the department-header in the fixed column */
   background-color: #e9ecef;
   border-bottom: 1px solid #dee2e6;
-  /* Occupy the whole row width in the grid */
-  grid-column: 1 / -1; 
+  display: grid;
+  grid-template-columns: repeat(var(--days-count, 31), 40px);
+  grid-column: 1; 
   height: 30px; 
 }
 
