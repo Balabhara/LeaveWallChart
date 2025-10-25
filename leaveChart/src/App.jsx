@@ -1,7 +1,7 @@
 import React from "react";
 import { Provider } from "react-redux";
 import { store } from "./Store";
-import Parent from "./Parent";
+import WallChart from "./WallChart";
 
 const leavesData= [
   { id: 1, user: "Bala bharathi", from: "2025-10-03", to: "2025-10-06", type: "Sick Leave",department:"Testing" },
@@ -14,7 +14,7 @@ const leavesData= [
 export default function App() {
   return (
     <Provider store={store}>
-      <Parent initialLeaves={leavesData} initialDate={new Date(2025, 9, 1)} />
+      <WallChart initialLeaves={leavesData} initialDate={new Date(2025, 9, 1)} />
     </Provider>
   );
 }

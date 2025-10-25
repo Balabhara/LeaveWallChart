@@ -1,0 +1,527 @@
+/* Global box sizing and font smoothing */
+* {
+    box-sizing: border-box;
+    font-family: 'Inter', system-ui, sans-serif;
+}
+
+body {
+    -webkit-font-smoothing: antialiased;
+    background-color: #f0f4f8;
+    margin: 0;
+    padding: 0;
+    flex-direction: column;
+}
+
+/* Top Control bar */
+.control-bar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 16px 32px;
+    background-color: #ffffff;
+    border-bottom: 1px solid #e2e8f0;
+}
+/* range button style(day/week/month) */
+.date-range-toggle {
+    display: flex;
+    border: 1px solid #cbd5e1;
+    border-radius: 12px;
+    overflow: hidden;
+    background-color: white;
+}
+
+.date-range-toggle button {
+    padding: 9px 16px;
+    border: none;
+    background: transparent;
+    color: #475569;
+    cursor: pointer;
+    font-weight: 500;
+    transition: background-color 0.2s;
+    outline: none;
+}
+
+.date-range-toggle button.active {
+    background-color: #0369a1;
+    color: white;
+    font-weight: 600;
+}
+
+/* Month Navigation */
+.month-nav {
+    display: flex;
+    align-items: center;
+    background-color: #ffffff;
+    color: #334155;
+    font-weight: 600;
+}
+
+.month-nav-label {
+    font-size: 16px;
+    margin-right: 8px;
+}
+
+.month-nav button {
+    width: 30px;
+    height: 30px;
+    background: #e2e8f0;
+    border: 1px solid #cbd5e1;
+    border-radius: 4px;
+    font-size: 16px;
+    cursor: pointer;
+    color: #334155;
+    transition: background 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.month-nav-button-group {
+    display: flex;
+    border-radius: 4px;
+    overflow: hidden;
+    gap: 4px;
+}
+
+/* Main container */
+.leave-wall-container {
+    width: 100%;
+    flex-grow: 1;
+    padding: 0 32px;
+    background: #ffffff;
+    display: flex;
+    flex-direction: column;
+    height: calc(100vh - 120px);
+}
+
+.leave-grid-wrapper {
+    flex: 1;
+    display: flex;
+    overflow:hidden;
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+    margin-top: 16px;
+    overflow: hidden;
+}
+
+/* Fixed user column */
+.user-column-fixed {
+    flex-shrink: 0;
+    width: 240px;
+    display: flex;
+    flex-direction: column;
+    background-color: #f8fafc;
+    z-index: 10;
+    box-shadow: 1px 0 0 #e2e8f0;
+}
+
+.fixed-column-rows-scroller {
+    flex: 1;
+    overflow-y: hidden;
+}
+
+.fixed-column-rows-scroller::-webkit-scrollbar {
+    display: none;
+}
+
+.user-column-fixed .header-cell {
+    height: 60px;
+    line-height: 1.2;
+    padding: 8px 12px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-weight: 500;
+    font-size: 14px;
+    color: #475569;
+    background: #f8fafc;
+    border-bottom: 1px solid #e2e8f0;
+}
+
+.user-column-fixed .header-cell button {
+    padding: 8px 12px;
+    background-color: transparent;
+    border: 1px solid #cbd5e1;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    color: #475569;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.user-column-fixed .header-cell button:hover {
+    background-color: #f1f5f9;
+}
+
+.user-column-fixed .user-column {
+    height: 40px;
+    line-height: 40px;
+    padding-left: 12px;
+    text-align: left;
+    font-size: 14px;
+    border-right: 1px solid #e2e8f0;
+    border-bottom: 1px solid #e2e8f0;
+    font-weight: 500;
+    color: #1e293b;
+    background: #ffffff;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.user-column-fixed .user-column .initials {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    background-color: #e0f2fe;
+    color: #0369a1;
+    font-size: 12px;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+/* Scrollable day grid */
+.day-grid-scroll {
+    flex-grow: 1;
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    overflow-y: auto;
+    overflow-x: auto;
+}
+
+.leave-header-row {
+    position: sticky;
+    top: 0;
+    z-index: 5;
+    background-color: #f8fafc;
+    border-bottom: 1px solid #e2e8f0;
+}
+
+.main-scrollable-content {
+     display: flex;
+    flex-direction: column;
+}
+.calendar-container {
+  background: #fff;
+  padding: 16px 32px;
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+  margin: 16px;
+}
+
+.fc .fc-daygrid-day.fc-day-today {
+  background-color: #e0f2fe !important;
+}
+
+.fc .fc-day-sat,
+.fc .fc-day-sun {
+  background-color: #f3f4f6;
+}
+
+.add-leave-btn {
+  background-color: #0369a1;
+  color: white;
+  padding: 9px 16px;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.add-leave-btn:hover {
+  background-color: #0284c7;
+}
+
+
+.leave-header-row,
+.leave-row {
+    display: grid;
+    grid-template-columns: repeat(var(--days-count,31),40px);
+    min-width: max-content;
+    flex-shrink: 0;
+    border-bottom: 1px solid #e2e8f0;
+}
+
+.day-header-cell,
+.leave-cell {
+    border-right: 1px solid #e2e8f0;
+    height: 40px;
+    line-height: 40px;
+    font-size: 14px;
+    padding: 0;
+    text-align: center;
+}
+
+.day-header-cell {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-width: 40px;
+    height: 60px;
+    font-weight: 600;
+    color: #475569;
+}
+
+.day-number {
+    font-weight: bold;
+    line-height: 1.2;
+}
+
+.day-label {
+    font-size: 0.7rem;
+    color: #64748b;
+    line-height: 1;
+}
+
+/* Leave cells */
+.leave-cell {
+    cursor: default;
+    transition: background 0.2s, color 0.2s;
+    background-color: #fcfcfc;
+}
+
+.leave-cell.weekend {
+    background-color: #f3f4f6 !important;
+    pointer-events: none;
+}
+
+/* Day Header Today Highlight */
+.day-header-cell.today .day-number,
+.day-header-cell.today .day-label {
+    color: #0369a1;
+    font-weight: 700;
+}
+
+/* Legend items style(Sicke Leave...) */
+.legend-items {
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    padding: 8px;
+    flex-wrap: wrap;
+    gap: 16px;
+}
+
+.leave-types {
+    display: flex;
+    gap: 24px;
+    align-items: center;
+    color: #475569;
+}
+
+.legend-item span {
+    border-radius: 4px;
+    padding: 0 8px;
+    font-weight: 600;
+    color: #fff;
+}
+
+/* Dialog */
+.dialog-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(0,0,0,0.4);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+}
+
+.dialog-box {
+    background: #ffffff;
+    padding: 32px;
+    border-radius: 12px;
+    box-shadow: 0 15px 30px rgba(0,0,0,0.2);
+    width: 90%;
+    max-width: 500px;
+    z-index: 1001;
+}
+
+.dialog-box h3 {
+    margin-top: 0;
+    font-weight: 600;
+    color: #1e293b;
+}
+
+.dialog-error {
+    color: #ef4444;
+    margin-bottom: 16px;
+    padding: 8px;
+    border: 1px solid #fca5a5;
+    background-color: #fef2f2;
+    border-radius: 0.375rem;
+}
+
+.dialog-field {
+    margin-bottom: 16px;
+}
+
+.dialog-field label {
+    display: block;
+    margin-bottom: 0.3rem;
+    font-weight: 500;
+    color: #475569;
+    font-size: 14px;
+}
+
+.dialog-field input[type="text"],
+.dialog-field input[type="date"],
+.dialog-field select {
+    width: 100%;
+    padding: 9px;
+    border: 1px solid #cbd5e1;
+    border-radius: 8px;
+    font-size: 16px;
+    box-sizing: border-box;
+}
+
+.dialog-buttons {
+    margin-top: 24px;
+    display: flex;
+    justify-content: flex-end;
+    gap: 12px;
+}
+
+.dialog-buttons button {
+    padding: 9px 20px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: 600;
+    transition: background-color 0.2s;
+    border: 1px solid transparent;
+}
+
+.dialog-buttons button:last-child {
+    background-color: #0369a1;
+    color: white;
+    border-color: #0369a1;
+}
+
+.dialog-buttons button:last-child:hover {
+    background-color: #0284c7;
+}
+
+.dialog-buttons button:first-child {
+    background-color: #f1f5f9;
+    color: #334155;
+    border-color: #cbd5e1;
+}
+
+.dialog-buttons button:first-child:hover {
+    background-color: #e2e8f0;
+}
+
+.required {
+    color: #ef4444;
+}
+/* --- Department Filter Styling --- */
+.department-filter {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 14px;
+    color: #475569;
+}
+
+.department-filter select {
+    padding: 6px 11px;
+    border: 1px solid #cbd5e1;
+    border-radius: 8px;
+    background-color: white;
+    font-size: 14px;
+    cursor: pointer;
+    background-image: url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%204%205%22%3E%3Cpath%20fill%3D%22%23475569%22%20d%3D%22M2%200L0%202h4L2%200zm0%205L0%203h4L2%205z%22%2F%3E%3C%2Fsvg%3E');
+    background-repeat: no-repeat;
+    background-position: right 8px center;
+    background-size: 8px auto;
+    padding-right: 28px; 
+}
+
+.department-filter select:focus {
+    border-color: #0369a1;
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(3, 105, 161, 0.2);
+}
+/* Department Header / Accordion Style */
+.department-header {
+  background-color: #e9ecef; /* Light gray background for header */
+  color: #87CEEB; /* Darker text */
+  padding: 8px 16px;
+  font-weight: 600;
+  cursor: pointer;
+  border-bottom: 1px solid #dee2e6;
+  text-transform: uppercase;
+  font-size: 13px;
+  display: flex;
+  align-items: center;
+  height: 30px; /* Match the height of a user-column if possible, or set a standard */
+}
+
+.department-header:hover {
+  background-color: #dee2e6;
+}
+
+.accordion-toggle {
+  margin-right: 8px;
+  font-size: 12px;
+  transition: transform 0.1s;
+}
+
+/* User Column Styling (Ensure it looks good under the department header) */
+.user-column {
+    padding: 8px 16px;
+    height: 30px; /* Set a consistent height */
+    /* ... (Other existing styles) ... */
+}
+
+
+/* Day Grid Accordion Spacer */
+.department-header-spacer {
+  /* This must match the department-header in the fixed column */
+  background-color: #e9ecef;
+  border-bottom: 1px solid #dee2e6;
+  display: grid;
+  grid-template-columns: repeat(var(--days-count, 31), 40px);
+  grid-column: 1; 
+  height: 30px; 
+}
+
+/* Update the grid layout to account for department headers */
+.main-scrollable-content {
+  display: grid;
+}
+/* Apply Leave button style */
+.month-nav .nav-apply-button {
+  margin-left: 8px;
+  padding: 6px 12px;
+  border-radius: 6px;
+  border: 1px solid #cbd5e1;
+  background-color: #f8fafc;
+  font-weight: bold;
+  color: #334155;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+  height: 30px;
+  width: 120px;
+}
+
+.month-nav .nav-apply-button:hover {
+  background-color: #e2e8f0;
+}
+
+
