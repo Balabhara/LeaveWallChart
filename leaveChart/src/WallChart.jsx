@@ -14,11 +14,19 @@ import {
   addEmployee,
 } from "./CreateSlice";
 import "./WallChart.css";
-import {formatISO,isWeekend,isToday,addMonths,startOfMonth,endOfMonth,startOfWeek,getRangeDays,getLabel,getUserDepartment}
-from './Utils'
+import {
+  formatISO,
+  isWeekend,
+  isToday,
+  addMonths,
+  startOfMonth,
+  getRangeDays,
+  getLabel,
+  getUserDepartment,
+  calculateDates
+} from "./Utils";
 
-// ------------------ Component ------------------
-export default function WallChart({ initialDate = new Date(), initialLeaves = []}) {
+export default function WallChart({ initialDate = new Date(), initialLeaves = [] }) {
   const dispatch = useDispatch();
   const {
     baseDate,
@@ -34,20 +42,44 @@ export default function WallChart({ initialDate = new Date(), initialLeaves = []
 
   const [expandedDepartments, setExpandedDepartments] = useState({});
   const [selectedDepartment, setSelectedDepartment] = useState("");
+  const [dragStart, setDragStart] = useState(null);
+  const [dragEnd, setDragEnd] = useState(null);
+  const [dragUser, setDragUser] = useState(null);
+  const [isUserLocked, setIsUserLocked] = useState(false);
+
+  // Load saved data from localStorage on startup
+const initialized = React.useRef(false);
+useEffect(() => {
+  if (initialized.current) return;
+  initialized.current = true;
+
+  const savedLeaves = JSON.parse(localStorage.getItem("leavesData") || "[]");
+
+  if (savedLeaves.length > 0) {
+    dispatch(setLeaves(savedLeaves));
+  } else if (initialLeaves.length > 0) {
+    dispatch(setLeaves(initialLeaves));
+  }
+
+  dispatch(setBaseDate(startOfMonth(initialDate)));
+}, [dispatch, initialDate, initialLeaves]);
 
 
+
+  // Persist leaves & users into localStorage when they change
   useEffect(() => {
-    if (initialLeaves.length) dispatch(setLeaves(initialLeaves));
-    dispatch(setBaseDate(startOfMonth(initialDate)));
-  }, [initialLeaves, initialDate, dispatch]);
+    localStorage.setItem("leavesData", JSON.stringify(leaves));
+  }, [leaves]);
 
   const weekdays = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
   const allowedTypes = Object.keys(leaveColors);
+  const daysCalc = calculateDates(newLeave.from, newLeave.to);
+  const currentUserLeave = leaves.find((lv) => lv.user === newLeave.user);
+  const totalLeave = currentUserLeave?.totalLeave ?? 0;
 
-  // --- All users for dropdown (merge initial, redux, and leaves)
   const allUsersForDropdown = useMemo(() => {
     const unique = new Map();
-    [ ...(reduxUsers || []), ...leaves.map((lv) => ({
+    [...(reduxUsers || []), ...leaves.map((lv) => ({
       user: lv.user,
       department: lv.department,
     }))].forEach((u) => {
@@ -56,7 +88,6 @@ export default function WallChart({ initialDate = new Date(), initialLeaves = []
     return Array.from(unique.values());
   }, [reduxUsers, leaves]);
 
-  // Build list of all users having leaves + ensure department
   const allUsersData = useMemo(() => {
     const userMap = {};
     leaves.forEach((lv) => {
@@ -66,11 +97,9 @@ export default function WallChart({ initialDate = new Date(), initialLeaves = []
           department: lv.department || getUserDepartment(lv.user, allUsersForDropdown),
         };
     });
-     // Sort users alphabetically
     return Object.values(userMap).sort((a, b) => a.user.localeCompare(b.user));
   }, [leaves, allUsersForDropdown]);
 
-  // Group users by department (for accordion display)
   const groupedUsers = useMemo(() => {
     return allUsersData.reduce((acc, u) => {
       const dept = u.department || "NO DEPARTMENT";
@@ -78,9 +107,9 @@ export default function WallChart({ initialDate = new Date(), initialLeaves = []
       return acc;
     }, {});
   }, [allUsersData]);
-// Department sorting: NO DEPARTMENT always comes first
+
   const departments = useMemo(() => {
-    const depts = Object.keys(groupedUsers);
+    const depts = [...new Set(Object.keys(groupedUsers))];
     return depts.sort((a, b) =>
       a === "NO DEPARTMENT" ? -1 : b === "NO DEPARTMENT" ? 1 : a.localeCompare(b)
     );
@@ -89,34 +118,27 @@ export default function WallChart({ initialDate = new Date(), initialLeaves = []
   const days = useMemo(() => getRangeDays(baseDate, activeRange), [baseDate, activeRange]);
   const labelText = useMemo(() => getLabel(baseDate, activeRange), [baseDate, activeRange]);
 
-  // --- Map leaves per user/date ---
   const leaveMap = useMemo(() => {
     const map = {};
     allUsersData.forEach(({ user }) => (map[user] = {}));
 
-  leaves.forEach((lv) => {
-  const dept = lv.department || getUserDepartment(lv.user, allUsersForDropdown);
-  const from = new Date(lv.from);
-  const to = new Date(lv.to);
+    leaves.forEach((lv) => {
+      const dept = lv.department || getUserDepartment(lv.user, allUsersForDropdown);
+      const from = new Date(lv.from);
+      const to = new Date(lv.to);
+      from.setHours(0, 0, 0, 0);
+      to.setHours(0, 0, 0, 0);
 
-  from.setHours(0, 0, 0, 0);
-  to.setHours(0, 0, 0, 0);
-
-  for (
-    let d = new Date(from);
-    d <= to;
-    d = new Date(d.getFullYear(), d.getMonth(), d.getDate() + 1)
-  ) {
-    map[lv.user][formatISO(d)] = { ...lv, department: dept };
-  }
-});
+      for (let d = new Date(from); d <= to; d.setDate(d.getDate() + 1)) {
+        map[lv.user][formatISO(d)] = { ...lv, department: dept };
+      }
+    });
     return map;
   }, [leaves, allUsersData, allUsersForDropdown]);
 
-  // Add new leave (validate & update redux)
   const handleAddLeave = () => {
-    if (!newLeave.user || !newLeave.type)
-      return dispatch(setDialogError("Please fill required fields"));
+    if (!newLeave.user || !newLeave.type || !newLeave.description)
+      return dispatch(setDialogError(" * Please fill required fields"));
     if (newLeave.from > newLeave.to)
       return dispatch(setDialogError("'To' date cannot be before 'From' date"));
 
@@ -128,7 +150,7 @@ export default function WallChart({ initialDate = new Date(), initialLeaves = []
     dispatch(setDialogError(""));
     dispatch(setNewLeave({ user: "", type: "", from: new Date(), to: new Date() }));
   };
-// basedate update based on Handle navigation
+
   const handleNav = (direction) => {
     const shift = direction === "prev" ? -1 : 1;
     if (activeRange === "Month") dispatch(setBaseDate(addMonths(baseDate, shift)));
@@ -139,7 +161,38 @@ export default function WallChart({ initialDate = new Date(), initialLeaves = []
     }
   };
 
-  // ------------------ Render ------------------
+  const toLocalDate = (dateStr) => {
+    const [y, m, d] = dateStr.split("-").map(Number);
+    return new Date(y, m - 1, d);
+  };
+
+  const handleMouseDown = (user, date) => {
+    setDragStart(date);
+    setDragEnd(date);
+    setDragUser(user);
+  };
+
+  const handleMouseEnter = (user, date) => {
+    if (dragStart && dragUser === user) {
+      setDragEnd(date);
+    }
+  };
+
+  const handleMouseUp = () => {
+    if (dragStart && dragEnd && dragUser) {
+      const from = dragStart < dragEnd ? dragStart : dragEnd;
+      const to = dragStart < dragEnd ? dragEnd : dragStart;
+
+      dispatch(setNewLeave({ user: dragUser, type: "", from, to }));
+      dispatch(setDialogError(""));
+      dispatch(setDialogOpen(true));
+      setIsUserLocked(true);
+    }
+    setDragStart(null);
+    setDragEnd(null);
+    setDragUser(null);
+  };
+
   return (
     <>
       {/* Top Control Bar */}
@@ -172,24 +225,13 @@ export default function WallChart({ initialDate = new Date(), initialLeaves = []
           <div className="month-nav-button-group">
             <button onClick={() => handleNav("prev")}>&lt;</button>
             <button onClick={() => handleNav("next")}>&gt;</button>
-            <button
-              className="nav-apply-button"
-              onClick={() => {
-                dispatch(setDialogOpen(true));
-                dispatch(setDialogError(""));
-                dispatch(setNewLeave({ user: "", type: "", from: new Date(), to: new Date() }));
-              }}
-            >
-              Apply Leave
-            </button>
           </div>
         </div>
       </div>
 
       {/* Main Grid */}
-      <div className="leave-wall-container">
+      <div className="leave-wall-container" onMouseUp={handleMouseUp}>
         <div className="leave-grid-wrapper">
-          {/* Fixed User Column */}
           <div className="user-column-fixed">
             <div className="header-cell">
               <button
@@ -206,12 +248,15 @@ export default function WallChart({ initialDate = new Date(), initialLeaves = []
                 .filter((d) => !selectedDepartment || d === selectedDepartment)
                 .map((dept) => (
                   <React.Fragment key={dept}>
-                    <div className="department-header" onClick={() =>
-                      setExpandedDepartments((prev) => ({
-                        ...prev,
-                        [dept]: !prev[dept],
-                      }))
-                    }>
+                    <div
+                      className="department-header"
+                      onClick={() =>
+                        setExpandedDepartments((prev) => ({
+                          ...prev,
+                          [dept]: !prev[dept],
+                        }))
+                      }
+                    >
                       <span className="accordion-toggle">
                         {expandedDepartments[dept] ? "▼" : "▶"}
                       </span>
@@ -253,18 +298,33 @@ export default function WallChart({ initialDate = new Date(), initialLeaves = []
                             const leave = leaveMap[user][formatISO(d)];
                             const weekend = isWeekend(d);
                             const bg = leave
-                              ? leaveColors[leave.type]
+                              ? leaveColors[leave?.type]
                               : weekend
                               ? "#f3f4f6"
                               : "#fcfcfc";
+
+                            const isSelected =
+                              dragUser === user &&
+                              dragStart &&
+                              dragEnd &&
+                              d >= (dragStart < dragEnd ? dragStart : dragEnd) &&
+                              d <= (dragStart > dragEnd ? dragStart : dragEnd);
+
                             return (
                               <div
                                 key={formatISO(d) + user}
-                                className={`leave-cell ${weekend ? "weekend" : ""}`}
-                                style={{ backgroundColor: bg }}
+                                className={`leave-cell ${weekend ? "weekend" : ""} ${
+                                  isSelected ? "drag-selected" : ""
+                                } ${leave ? "leave-date" : ""}`}
+                                style={{
+                                  backgroundColor: isSelected ? "#dbeafe" : bg,
+                                  cursor: "pointer",
+                                }}
+                                onMouseDown={() => handleMouseDown(user, d)}
+                                onMouseEnter={() => handleMouseEnter(user, d)}
                                 title={
                                   leave
-                                    ? `${leave.type} (${formatISO(leave.from)} → ${formatISO(
+                                    ? `${leave?.type} (${formatISO(leave.from)} → ${formatISO(
                                         leave.to
                                       )})`
                                     : weekend
@@ -272,7 +332,7 @@ export default function WallChart({ initialDate = new Date(), initialLeaves = []
                                     : ""
                                 }
                               >
-                                {!weekend && leave ? leave.type[0] : ""}
+                                {!weekend && leave ? leave?.type?.[0] : ""}
                               </div>
                             );
                           })}
@@ -284,7 +344,7 @@ export default function WallChart({ initialDate = new Date(), initialLeaves = []
           </div>
         </div>
 
-        {/* Legend items*/}
+        {/* Legend */}
         <div className="legend-items">
           {allowedTypes.map((type) => (
             <span key={type} className="legend-item">
@@ -304,64 +364,110 @@ export default function WallChart({ initialDate = new Date(), initialLeaves = []
           ))}
         </div>
       </div>
-
       {/* Add Leave Dialog */}
-      {dialogOpen && (
-        <div className="dialog-overlay">
-          <div className="dialog-box">
-            <h3>Add Employee Leave</h3>
+        {dialogOpen && (
+      <div className="side-panel">
+        <div className="side-panel-content">
+          <div className="side-panel-header">
+            <h3>Request Leave</h3>
+            <button className="close-btn" onClick={() => dispatch(setDialogOpen(false))}>✕</button>
+          </div>
+
+          <div className="side-panel-body">
+
+            {/* Left Section */}
+            <div className="dialog-section">
             {dialogError && <div className="dialog-error">{dialogError}</div>}
-            <div className="dialog-field">
-              <label>User *</label>
-              <select
-                value={newLeave.user}
-                onChange={(e) => dispatch(setNewLeave({ ...newLeave, user: e.target.value }))}
-              >
-                <option value="">-- Select User --</option>
-                {allUsersForDropdown.map((u) => (
-                  <option key={u.user}>{u.user}</option>
-                ))}
-              </select>
-            </div>
+              <div className="dialog-field">
+                <label>Team Member *</label>
+                <select
+                  disabled={isUserLocked}
+                  value={newLeave.user}
+                  onChange={(e) => dispatch(setNewLeave({ ...newLeave, user: e.target.value }))}
+                >
+                  <option value="">-- Select User --</option>
+                  {allUsersForDropdown.map((u) => (
+                    <option key={u.user}>{u.user}</option>
+                  ))}
+                </select>
+              </div>
 
-            <div className="dialog-field">
-              <label>Leave Type *</label>
-              <select
-                value={newLeave.type}
-                onChange={(e) => dispatch(setNewLeave({ ...newLeave, type: e.target.value }))}
-              >
-                <option value="">-- Select Leave Type --</option>
-                {allowedTypes.map((t) => (
-                  <option key={t}>{t}</option>
-                ))}
-              </select>
-            </div>
+              <div className="dialog-field">
+                <label>Leave Type *</label>
+                <select
+                  value={newLeave.type}
+                  onChange={(e) => dispatch(setNewLeave({ ...newLeave, type: e.target.value }))}
+                >
+                  <option value="">-- Select Leave Type --</option>
+                  {allowedTypes.map((t) => (
+                    <option key={t}>{t}</option>
+                  ))}
+                </select>
+              </div>
 
-            {["from", "to"].map((field) => (
-              <div key={field} className="dialog-field">
-                <label>{field === "from" ? "From:" : "To:"}</label>
+              <div className="dialog-field">
+                <label>From:</label>
                 <input
                   type="date"
-                  value={formatISO(newLeave[field])}
+                  value={formatISO(newLeave.from)}
                   onChange={(e) =>
-                    dispatch(
-                      setNewLeave({
-                        ...newLeave,
-                        [field]: new Date(e.target.value + "T00:00:00"),
-                      })
-                    )
+                    dispatch(setNewLeave({ ...newLeave, from: toLocalDate(e.target.value) }))
                   }
                 />
               </div>
-            ))}
 
-            <div className="dialog-buttons">
-              <button onClick={() => dispatch(setDialogOpen(false))}>Cancel</button>
-              <button onClick={handleAddLeave}>Apply</button>
+              <div className="dialog-field">
+                <label>To:</label>
+                <input
+                  type="date"
+                  value={formatISO(newLeave.to)}
+                  onChange={(e) =>
+                    dispatch(setNewLeave({ ...newLeave, to: toLocalDate(e.target.value) }))
+                  }
+                />
+              </div>
+                  <div className="dialog-field">
+                <label>Description *</label>
+                <textarea
+                  placeholder="Enter a short description..."
+                  value={newLeave.description || ""}
+                  onChange={(e) => dispatch(setNewLeave({ ...newLeave, description: e.target.value }))}
+                />
+              </div>
+
+              <div className="request-dialog dialog-buttons">
+                <button onClick={handleAddLeave}>Apply</button>
+                <button className="cancel" onClick={() => dispatch(setDialogOpen(false))}>
+                  Cancel
+                </button>
+              </div>
+            </div>
+
+            {/* Right Section */}
+            <div className="dialog-summary">
+              <h4>Leave Details</h4>
+              <div className="details-box">
+                <p>{formatISO(newLeave.from)} → {formatISO(newLeave.to)}</p>
+                <input type="text"
+                value="Full Days"
+                disabled='true'
+                />
+                <p style={{ marginTop: "0.5rem" }}>
+                  Total: <strong>{daysCalc}{daysCalc>1?'days':'day'}</strong> {newLeave.type && `(${newLeave.type})`}
+                </p>
+              </div>
+              <h4>Allowance Summary</h4> 
+              <div className="allowance-box"> 
+                <div><strong>Current:</strong>{totalLeave} days</div> 
+              <div><strong>New:</strong> {totalLeave - daysCalc} days</div> 
+              <div style={{ color: "red" }}><strong>Change:</strong> ↓ {daysCalc}{daysCalc>1?'days':'day'}</div> </div>
             </div>
           </div>
         </div>
-      )}
+      </div>
+    )}
+
+
 
       {/* Add Employee Dialog */}
       {employeeDialogOpen && (

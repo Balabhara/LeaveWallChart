@@ -12,6 +12,11 @@ export const addMonths = (d, n) => new Date(d.getFullYear(), d.getMonth() + n, 1
 export const startOfMonth = (d) => new Date(d.getFullYear(), d.getMonth(), 1);
 export const endOfMonth = (d) => new Date(d.getFullYear(), d.getMonth() + 1, 0);
 export const startOfWeek = (d) => new Date(d.setDate(d.getDate() - d.getDay()));
+export const calculateDates = (start,end) => {
+    const diff = new Date(end) - new Date(start);
+    const daysLength = diff/(1000 * 60 * 60 * 24) + 1;
+    return daysLength;
+}
 
 export const getRangeDays = (baseDate, range) => {
   if (range === "Day") return [new Date(baseDate)];

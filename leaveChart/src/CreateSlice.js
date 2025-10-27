@@ -12,7 +12,7 @@ const initialState = {
   leaves: [],
   dialogOpen: false,
   dialogError: "",
-  newLeave: { user: "", type: "", from: new Date(), to: new Date() },
+  newLeave: { user: "", type: "", from: new Date(), to: new Date(), description: "" },
   employeeDialogOpen: false,
   newEmployee: { user: "", department: "" },
   users: [],
@@ -22,18 +22,26 @@ const leaveSlice = createSlice({
   name: "leave",
   initialState,
   reducers: {
-    setBaseDate(state, action) { state.baseDate = action.payload; },
-    setActiveRange(state, action) { state.activeRange = action.payload; },
-    setLeaves(state, action) { 
-      state.leaves = action.payload.map(lv => ({
+    setBaseDate: (state, action) => {
+      state.baseDate = action.payload;
+    },
+    setActiveRange: (state, action) => {
+      state.activeRange = action.payload;
+    },
+    setLeaves: (state, action) => {
+      state.leaves = action.payload.map((lv) => ({
         ...lv,
         color: leaveColors[lv.type] || "",
         from: new Date(lv.from),
         to: new Date(lv.to),
+        
+        totalLeave:lv.totalLeave - ((new Date(lv.to) - new Date(lv.from)) / (1000 * 60 * 60 * 24) + 1)
       }));
     },
-    addLeave(state, action) {
+    addLeave: (state, action) => {
       const lv = action.payload;
+
+      // Add leave entry
       state.leaves.push({
         ...lv,
         id: Date.now() + state.leaves.length,
@@ -42,20 +50,37 @@ const leaveSlice = createSlice({
         to: new Date(lv.to),
       });
     },
-    setDialogOpen(state, action) { state.dialogOpen = action.payload; },
-    setDialogError(state, action) { state.dialogError = action.payload; },
-    setNewLeave(state, action) { state.newLeave = action.payload; },
-    setEmployeeDialogOpen(state, action) { state.employeeDialogOpen = action.payload; },
-    setNewEmployee(state, action) { state.newEmployee = action.payload; },
-
-    addEmployee(state, action) {
+    setDialogOpen: (state, action) => {
+      state.dialogOpen = action.payload;
+    },
+    setDialogError: (state, action) => {
+      state.dialogError = action.payload;
+    },
+    setNewLeave: (state, action) => {
+      state.newLeave = action.payload;
+    },
+    setEmployeeDialogOpen: (state, action) => {
+      state.employeeDialogOpen = action.payload;
+    },
+    setNewEmployee: (state, action) => {
+      state.newEmployee = action.payload;
+    },
+    addEmployee: (state, action) => {
       const { user, department } = action.payload;
       if (!user) return;
 
-      // Check if employee already exists
-      const exists = state.users.find(u => u.user === user);
+      const exists = state.users.find((u) => u.user === user);
       if (!exists) {
-        state.users.push({ user, department: department || "NO DEPARTMENT" });
+       state.leaves.push({ 
+        id: state.leaves.length+1, 
+        color: "", from: new Date(),
+         to: new Date(), 
+         user:user, 
+         department:department, 
+         description:"",
+         totalLeave:24,
+         type:""
+        });
       }
     },
   },

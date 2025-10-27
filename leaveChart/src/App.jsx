@@ -4,11 +4,11 @@ import { store } from "./Store";
 import WallChart from "./WallChart";
 
 const leavesData= [
-  { id: 1, user: "Bala bharathi", from: "2025-10-03", to: "2025-10-06", type: "Sick Leave",department:"Testing" },
-  { id: 2, user: "Vasanth", from: "2025-10-05", to: "2025-10-08", type: "Sick Leave",department:"Testing" },
-  { id: 3, user: "Meiyarasan", from: "2025-10-10", to: "2025-10-13", type: "Casual Leave",department:"Developement" },
-  { id: 4, user: "SasiKumar", from: "2025-10-01", to: "2025-10-02", type: "Annual Leave",department:"HR" },
-  { id: 5, user: "Nagaraj", from: "2025-10-20", to: "2025-10-23", type: "Casual Leave",department:"Testing" }
+  { id: 1, user: "Bala bharathi", from: "2025-10-03", to: "2025-10-06", type: "Sick Leave",department:"Testing",description:"Fever",totalLeave:24 },
+  { id: 2, user: "Vasanth", from: "2025-10-05", to: "2025-10-08", type: "Sick Leave",department:"Testing",description:"Fever",totalLeave:24 },
+  { id: 3, user: "Meiyarasan", from: "2025-10-10", to: "2025-10-13", type: "Casual Leave",department:"Development",description:"Function",totalLeave:24 },
+  { id: 4, user: "SasiKumar", from: "2025-10-01", to: "2025-10-02", type: "Annual Leave",department:"HR",description:"Fever",totalLeave:24 },
+  { id: 5, user: "Nagaraj", from: "2025-10-20", to: "2025-10-23", type: "Casual Leave",department:"Testing",description:"Going To Temple",totalLeave:24 }
 ];
 
 export default function App() {
