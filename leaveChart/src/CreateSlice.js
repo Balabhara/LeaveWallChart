@@ -34,22 +34,37 @@ const leaveSlice = createSlice({
         color: leaveColors[lv.type] || "",
         from: new Date(lv.from),
         to: new Date(lv.to),
-        
-        totalLeave:lv.totalLeave - ((new Date(lv.to) - new Date(lv.from)) / (1000 * 60 * 60 * 24) + 1)
+        totalLeave:lv.totalLeave
       }));
     },
-    addLeave: (state, action) => {
-      const lv = action.payload;
+ addLeave: (state, action) => {
+  const lv = action.payload;
+  const daysTaken =
+    (new Date(lv.to) - new Date(lv.from)) / (1000 * 60 * 60 * 24) + 1;
 
-      // Add leave entry
-      state.leaves.push({
-        ...lv,
-        id: Date.now() + state.leaves.length,
-        color: leaveColors[lv.type] || "",
-        from: new Date(lv.from),
-        to: new Date(lv.to),
-      });
-    },
+  // Find the user's existing record
+  const userLeaveIndex = state.leaves.findIndex((l) => l.user === lv.user);
+
+  if (userLeaveIndex !== -1) {
+    // Update totalLeave for that user
+    state.leaves[userLeaveIndex].totalLeave =
+      state.leaves[userLeaveIndex].totalLeave - daysTaken;
+  }
+
+  // Add the new leave record (for visualization history)
+  state.leaves.push({
+    ...lv,
+    id: Date.now() + state.leaves.length,
+    color: leaveColors[lv.type] || "",
+    from: new Date(lv.from),
+    to: new Date(lv.to),
+    totalLeave:
+      userLeaveIndex !== -1
+        ? state.leaves[userLeaveIndex].totalLeave
+        : lv.totalLeave - daysTaken,
+  });
+},
+
     setDialogOpen: (state, action) => {
       state.dialogOpen = action.payload;
     },

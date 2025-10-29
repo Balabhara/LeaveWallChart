@@ -1,6 +1,12 @@
-// ------------------ Helpers ------------------
+// ------------------ Helper Functions ------------------
 
-export const formatISO = (d) => d.toISOString().slice(0, 10);
+export const formatISO = (date) => {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+};
+
 export const isWeekend = (d) => [0, 6].includes(d.getDay());
 
 export const isToday = (d) => {
@@ -12,6 +18,7 @@ export const addMonths = (d, n) => new Date(d.getFullYear(), d.getMonth() + n, 1
 export const startOfMonth = (d) => new Date(d.getFullYear(), d.getMonth(), 1);
 export const endOfMonth = (d) => new Date(d.getFullYear(), d.getMonth() + 1, 0);
 export const startOfWeek = (d) => new Date(d.setDate(d.getDate() - d.getDay()));
+
 export const calculateDates = (start,end) => {
     const diff = new Date(end) - new Date(start);
     const daysLength = diff/(1000 * 60 * 60 * 24) + 1;
@@ -50,6 +57,3 @@ export const getLabel = (date, range) => {
     year: "numeric",
   });
 };
-
-export const getUserDepartment = (user, usersList) =>
-  usersList.find((u) => u.user === user)?.department || "NO DEPARTMENT";

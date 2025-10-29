@@ -22,7 +22,6 @@ import {
   startOfMonth,
   getRangeDays,
   getLabel,
-  getUserDepartment,
   calculateDates
 } from "./Utils";
 
@@ -75,18 +74,7 @@ useEffect(() => {
   const allowedTypes = Object.keys(leaveColors);
   const daysCalc = calculateDates(newLeave.from, newLeave.to);
   const currentUserLeave = leaves.find((lv) => lv.user === newLeave.user);
-  const totalLeave = currentUserLeave?.totalLeave ?? 0;
-
-  const allUsersForDropdown = useMemo(() => {
-    const unique = new Map();
-    [...(reduxUsers || []), ...leaves.map((lv) => ({
-      user: lv.user,
-      department: lv.department,
-    }))].forEach((u) => {
-      if (!unique.has(u.user)) unique.set(u.user, u);
-    });
-    return Array.from(unique.values());
-  }, [reduxUsers, leaves]);
+  const totalLeave = currentUserLeave?.totalLeave;
 
   const allUsersData = useMemo(() => {
     const userMap = {};
@@ -94,11 +82,11 @@ useEffect(() => {
       if (!userMap[lv.user])
         userMap[lv.user] = {
           user: lv.user,
-          department: lv.department || getUserDepartment(lv.user, allUsersForDropdown),
+          department: lv.department,
         };
     });
     return Object.values(userMap).sort((a, b) => a.user.localeCompare(b.user));
-  }, [leaves, allUsersForDropdown]);
+  }, [leaves]);
 
   const groupedUsers = useMemo(() => {
     return allUsersData.reduce((acc, u) => {
@@ -123,7 +111,7 @@ useEffect(() => {
     allUsersData.forEach(({ user }) => (map[user] = {}));
 
     leaves.forEach((lv) => {
-      const dept = lv.department || getUserDepartment(lv.user, allUsersForDropdown);
+      const dept = lv.department;
       const from = new Date(lv.from);
       const to = new Date(lv.to);
       from.setHours(0, 0, 0, 0);
@@ -134,7 +122,7 @@ useEffect(() => {
       }
     });
     return map;
-  }, [leaves, allUsersData, allUsersForDropdown]);
+  }, [leaves, allUsersData]);
 
   const handleAddLeave = () => {
     if (!newLeave.user || !newLeave.type || !newLeave.description)
@@ -143,9 +131,10 @@ useEffect(() => {
       return dispatch(setDialogError("'To' date cannot be before 'From' date"));
 
     const dept =
-      allUsersForDropdown.find((u) => u.user === newLeave.user)?.department || "NO DEPARTMENT";
+      leaves.find((u) => u.user === newLeave.user)?.department || "NO DEPARTMENT";
+      const leaveUser = leaves.find((lv) => lv.user === newLeave.user);
 
-    dispatch(addLeave({ ...newLeave, user: newLeave.user.trim(), department: dept }));
+    dispatch(addLeave({ ...newLeave, user: newLeave.user.trim(), department: dept,totalLeave:leaveUser.totalLeave }));
     dispatch(setDialogOpen(false));
     dispatch(setDialogError(""));
     dispatch(setNewLeave({ user: "", type: "", from: new Date(), to: new Date() }));
@@ -199,7 +188,7 @@ useEffect(() => {
       <div className="control-bar">
         <div className="department-filter">
           <select value={selectedDepartment} onChange={(e) => setSelectedDepartment(e.target.value)}>
-            <option value="">-- Department --</option>
+            <option value="">-- All Department --</option>
             {departments
               .filter((dep) => dep !== "NO DEPARTMENT")
               .map((dep) => (
@@ -290,7 +279,7 @@ useEffect(() => {
                 .filter((d) => !selectedDepartment || d === selectedDepartment)
                 .map((dept) => (
                   <React.Fragment key={dept + "-grid"}>
-                    <div className="department-header-spacer"></div>
+                    <div className={`department-header-spacer ${ expandedDepartments[dept] ? "nn-expand" : "" }`}/>
                     {expandedDepartments[dept] &&
                       groupedUsers[dept]?.map((user) => (
                         <div key={user} className="leave-row">
@@ -379,21 +368,18 @@ useEffect(() => {
             <div className="dialog-section">
             {dialogError && <div className="dialog-error">{dialogError}</div>}
               <div className="dialog-field">
-                <label>Team Member *</label>
-                <select
+                <label>Team Member <span style={{color:'red'}}>*</span></label>
+                <input
                   disabled={isUserLocked}
+                  type="text"
                   value={newLeave.user}
                   onChange={(e) => dispatch(setNewLeave({ ...newLeave, user: e.target.value }))}
                 >
-                  <option value="">-- Select User --</option>
-                  {allUsersForDropdown.map((u) => (
-                    <option key={u.user}>{u.user}</option>
-                  ))}
-                </select>
+                </input>
               </div>
 
               <div className="dialog-field">
-                <label>Leave Type *</label>
+                <label>Leave Type <span style={{color:'red'}}>*</span></label>
                 <select
                   value={newLeave.type}
                   onChange={(e) => dispatch(setNewLeave({ ...newLeave, type: e.target.value }))}
@@ -427,7 +413,7 @@ useEffect(() => {
                 />
               </div>
                   <div className="dialog-field">
-                <label>Description *</label>
+                <label>Description <span style={{color:'red'}}>*</span></label>
                 <textarea
                   placeholder="Enter a short description..."
                   value={newLeave.description || ""}
@@ -458,9 +444,9 @@ useEffect(() => {
               </div>
               <h4>Allowance Summary</h4> 
               <div className="allowance-box"> 
-                <div><strong>Current:</strong>{totalLeave} days</div> 
-              <div><strong>New:</strong> {totalLeave - daysCalc} days</div> 
-              <div style={{ color: "red" }}><strong>Change:</strong> ↓ {daysCalc}{daysCalc>1?'days':'day'}</div> </div>
+                <div><strong>Current :</strong> {totalLeave} days</div> 
+              <div><strong>New :</strong> {totalLeave - daysCalc} days</div> 
+              <div style={{ color: "red" }}><strong>Change :</strong> ↓ {daysCalc}{daysCalc>1?'days':'day'}</div> </div>
             </div>
           </div>
         </div>
@@ -475,9 +461,10 @@ useEffect(() => {
           <div className="dialog-box">
             <h3>Add New Employee</h3>
             <div className="dialog-field">
-              <label>User *</label>
+              <label>User <span style={{color:'red'}}>*</span></label>
               <input
                 type="text"
+                placeholder="Enter employee name"
                 value={newEmployee.user}
                 onChange={(e) =>
                   dispatch(setNewEmployee({ ...newEmployee, user: e.target.value }))
